@@ -36,4 +36,13 @@ object stdlib {
 
     Right(NumValue(a(0) / a(1)))
   }
+
+  val print = NativeDefValue { args =>
+    args.map {
+      case NumValue(n)           => println(n)
+      case d @ DefValue(_, _, _) => println("<fn@%x>".format(d.hashCode))
+      case d @ NativeDefValue(_) => println("<fn@%x>".format(d.hashCode))
+    }
+    Right(NumValue(0))
+  }
 }

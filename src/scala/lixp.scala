@@ -20,10 +20,11 @@ object lixp {
   private def byValue[K,V](fn: V => Boolean)(kv: (K,V)): Boolean = fn(kv._2)
 
   val standardEnv = Map(
-    '+ -> stdlib.add,
-    '- -> stdlib.sub,
-    '* -> stdlib.mul,
-    '/ -> stdlib.div
+    '+     -> stdlib.add,
+    '-     -> stdlib.sub,
+    '*     -> stdlib.mul,
+    '/     -> stdlib.div,
+    'print -> stdlib.print
   )
 
   def evaluate(expr: Expr, env: Map[Symbol, Value] = standardEnv): Either[String, Value] = expr match {
