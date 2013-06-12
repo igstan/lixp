@@ -10,38 +10,25 @@ case class Let(bindings: Seq[(Symbol, Expr)], body: Expr) extends Expr
 case class Def(params: Seq[Symbol], body: Expr) extends Expr
 case class App(fn: Expr, args: Seq[Expr]) extends Expr
 
-sealed trait Env {
-  def lookup(id: Symbol): Option[Value] = this match {
-    case Empty() => None
-    case Binding(bound, value, next) =>
-      if (id == bound) Some(value) else next.lookup(id)
-  }
-}
-case class Empty() extends Env
-case class Binding(id: Symbol, value: Value, next: Env) extends Env
-
 sealed trait Value
 case class NumValue(n: Int) extends Value
-case class DefValue(params: Set[Symbol], body: Expr, env: Env) extends Value
+case class DefValue(params: Set[Symbol], body: Expr, env: Map[Symbol, Value]) extends Value
 case class NativeDefValue(fn: Seq[Value] => Either[String, Value]) extends Value
 
 object lixp {
   private def key[K,V](kv: (K,V)): K = kv._1
   private def byValue[K,V](fn: V => Boolean)(kv: (K,V)): Boolean = fn(kv._2)
 
-  val standardEnv = Binding(
-    '+, stdlib.add, Binding(
-      '-, stdlib.sub, Binding(
-        '*, stdlib.mul, Binding(
-          '/, stdlib.div, Empty()
-        )
-      )
-    )
+  val standardEnv = Map(
+    '+ -> stdlib.add,
+    '- -> stdlib.sub,
+    '* -> stdlib.mul,
+    '/ -> stdlib.div
   )
 
-  def evaluate(expr: Expr, env: Env = standardEnv): Either[String, Value] = expr match {
+  def evaluate(expr: Expr, env: Map[Symbol, Value] = standardEnv): Either[String, Value] = expr match {
     case Num(n) => Right(NumValue(n))
-    case Id(id) => env.lookup(id) match {
+    case Id(id) => env.get(id) match {
         case None    => Left("unbound identifier: %s".format(id.name))
         case Some(v) => Right(v)
       }
@@ -57,11 +44,11 @@ object lixp {
       if (dupes.size > 0) {
         Left("duplicate binding occurrences: %s".format(dupes.keys.map(_.name).mkString("; ")))
       } else {
-        val boundEnv = bindings.foldLeft[Either[String,Env]](Right(env)) { (prevEnv, binding) =>
+        val boundEnv = bindings.foldLeft[Either[String, Map[Symbol, Value]]](Right(env)) { (prevEnv, binding) =>
           prevEnv match {
             case Right(prevEnv) =>
               evaluate(binding._2, env) match {
-                case Right(value)  => Right(Binding(binding._1, value, prevEnv))
+                case Right(value)  => Right(prevEnv + (binding._1 -> value))
                 case Left(message) => Left(message)
               }
             case left => left
@@ -91,12 +78,12 @@ object lixp {
       evaluate(fn, env) match {
         case Left(message) => Left(message)
         case Right(DefValue(params, body, closedEnv)) => {
-          val boundEnv = (params, args).zipped.toList.foldLeft[Either[String,Env]](Right(closedEnv)) {
+          val boundEnv = (params, args).zipped.toList.foldLeft[Either[String, Map[Symbol, Value]]](Right(closedEnv)) {
             (prevEnv, binding) =>
               prevEnv match {
                 case Right(prevEnv) =>
                   evaluate(binding._2, env) match {
-                    case Right(value)  => Right(Binding(binding._1, value, prevEnv))
+                    case Right(value)  => Right(prevEnv + (binding._1 -> value))
                     case Left(message) => Left(message)
                   }
                 case left => left

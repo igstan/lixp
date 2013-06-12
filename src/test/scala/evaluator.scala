@@ -8,20 +8,20 @@ class EvaluatorSpec extends FunSuite with MustMatchers {
   }
 
   test("finds identifier in environment") {
-    lixp.evaluate(Id('foo), Binding('foo, NumValue(4), Empty())) must be(Right(NumValue(4)))
+    lixp.evaluate(Id('foo), Map('foo -> NumValue(4))) must be(Right(NumValue(4)))
   }
 
   test("complains when it can't find identifier in environment") {
-    lixp.evaluate(Id('foo), Empty()) must be(Left("unbound identifier: foo"))
+    lixp.evaluate(Id('foo), Map()) must be(Left("unbound identifier: foo"))
   }
 
   test("single-binding let expression") {
-    lixp.evaluate(Let(List('foo -> Num(1)), Id('foo)), Empty()) must be(Right(NumValue(1)))
+    lixp.evaluate(Let(List('foo -> Num(1)), Id('foo)), Map()) must be(Right(NumValue(1)))
   }
 
   test("let expression errors with duplicate bindings 1") {
     val letExpr = Let(List('foo -> Num(1), 'foo -> Num(1)), Id('foo))
-    lixp.evaluate(letExpr, Empty()) must be(Left("duplicate binding occurrences: foo"))
+    lixp.evaluate(letExpr, Map()) must be(Left("duplicate binding occurrences: foo"))
   }
 
   test("let expression errors with duplicate bindings 2") {
@@ -34,7 +34,7 @@ class EvaluatorSpec extends FunSuite with MustMatchers {
       ),
       Id('foo)
     )
-    lixp.evaluate(letExpr, Empty()) must be(Left("duplicate binding occurrences: foo; bar"))
+    lixp.evaluate(letExpr, Map()) must be(Left("duplicate binding occurrences: foo; bar"))
   }
 
   test("anonymous function definition") {
@@ -45,7 +45,7 @@ class EvaluatorSpec extends FunSuite with MustMatchers {
 
   test("anonymous function definition with closure") {
     val expr = Let(List('a -> Num(1)), Def(params = List('a, 'b), body = Id('a)))
-    var eval = DefValue(Set('a, 'b), Id('a), Binding('a, NumValue(1), lixp.standardEnv))
+    var eval = DefValue(Set('a, 'b), Id('a), lixp.standardEnv + ('a -> NumValue(1)))
     lixp.evaluate(expr) must be(Right(eval))
   }
 
