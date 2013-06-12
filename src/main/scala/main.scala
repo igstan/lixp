@@ -1,0 +1,129 @@
+package ro.igstan.lixp
+
+import scala.collection.immutable.ListSet
+
+sealed trait Expr
+case class Num(n: Int) extends Expr
+case class Id(id: Symbol) extends Expr
+case class If(test: Expr, truthy: Expr, falsy: Expr) extends Expr
+case class Let(bindings: Seq[(Symbol, Expr)], body: Expr) extends Expr
+case class Def(params: Seq[Symbol], body: Expr) extends Expr
+case class App(fn: Expr, args: Seq[Expr]) extends Expr
+
+sealed trait Env {
+  def lookup(id: Symbol): Option[Value] = this match {
+    case Empty() => None
+    case Binding(bound, value, next) =>
+      if (id == bound) Some(value) else next.lookup(id)
+  }
+}
+case class Empty() extends Env
+case class Binding(id: Symbol, value: Value, next: Env) extends Env
+
+sealed trait Value
+case class NumValue(n: Int) extends Value
+case class DefValue(params: Set[Symbol], body: Expr, env: Env) extends Value
+case class NativeDefValue(fn: Seq[Int] => Int) extends Value
+
+object lixp {
+  private def key[K,V](kv: (K,V)): K = kv._1
+  private def byValue[K,V](fn: V => Boolean)(kv: (K,V)): Boolean = fn(kv._2)
+
+  val standardEnv = Binding(
+    '+, stdlib.add, Binding(
+      '-, stdlib.sub, Binding(
+        '*, stdlib.mul, Binding('/, stdlib.div, Empty())
+      )
+    )
+  )
+
+  def evaluate(expr: Expr, env: Env = standardEnv): Either[String, Value] = expr match {
+    case Num(n) => Right(NumValue(n))
+    case Id(id) => env.lookup(id) match {
+        case None    => Left("unbound identifier: %s".format(id.name))
+        case Some(v) => Right(v)
+      }
+    case If(test, truthy, falsy) => evaluate(test, env) match {
+        case (Right(NumValue(0))) => evaluate(falsy, env)
+        case (Right(NumValue(_))) => evaluate(truthy, env)
+        case (Right(_))           => Left("test condition in if expression is not a number")
+        case a                    => a
+      }
+    case Let(bindings, body) => {
+      val dupes = bindings.groupBy(key).mapValues(_.size).filter(byValue(_ > 1))
+
+      if (dupes.size > 0) {
+        Left("duplicate binding occurrences: %s".format(dupes.keys.map(_.name).mkString("; ")))
+      } else {
+        val boundEnv = bindings.foldLeft[Either[String,Env]](Right(env)) { (prevEnv, binding) =>
+          prevEnv match {
+            case Right(prevEnv) =>
+              evaluate(binding._2, env) match {
+                case Right(value)  => Right(Binding(binding._1, value, prevEnv))
+                case Left(message) => Left(message)
+              }
+            case left => left
+          }
+        }
+
+        boundEnv match {
+          case Right(boundEnv) => evaluate(body, boundEnv)
+          case Left(message)   => Left(message)
+        }
+      }
+    }
+    case Def(params, body) => {
+      val dupes = params.groupBy(identity).mapValues(_.size).filter(byValue(_ > 1))
+
+      if (dupes.size > 0) {
+        // extract duplicate param names preserving declaration order
+        val symbolSet = ListSet(params.reverse : _*)
+        val dupeParams = dupes.keys.toSet
+        val dupeNames = symbolSet.filter(dupeParams contains _)
+        Left("duplicate parameter occurrences: %s".format(dupeNames.map(_.name).mkString("; ")))
+      } else {
+        Right(DefValue(params.toSet, body, env))
+      }
+    }
+    case App(fn, args) => {
+      evaluate(fn, env) match {
+        case Left(message) => Left(message)
+        case Right(DefValue(params, body, closedEnv)) => {
+          val boundEnv = (params, args).zipped.toList.foldLeft[Either[String,Env]](Right(closedEnv)) {
+            (prevEnv, binding) =>
+              prevEnv match {
+                case Right(prevEnv) =>
+                  evaluate(binding._2, env) match {
+                    case Right(value)  => Right(Binding(binding._1, value, prevEnv))
+                    case Left(message) => Left(message)
+                  }
+                case left => left
+              }
+          }
+
+          boundEnv match {
+            case Right(boundEnv) => evaluate(body, boundEnv)
+            case Left(message)   => Left(message)
+          }
+        }
+        case Right(NativeDefValue(nfn)) =>
+          val evaledArgs = args.foldLeft[Either[String, Seq[Int]]](Left(s"no arguments given for $fn")) {
+            case (Right(values), arg) =>
+              evaluate(arg, env) match {
+                case Right(NumValue(v)) => Right(v +: values)
+                case Left(m) => Left(m)
+              }
+            case (Left(m), arg) if m.startsWith("no arguments given for") =>
+              evaluate(arg, env) match {
+                case Right(NumValue(v)) => Right(Seq(v))
+                case Left(m)            => Left(m)
+              }
+            case (Left(m), _) => Left(m)
+          }
+
+          evaledArgs.right.map(args => NumValue(nfn(args.reverse)))
+        case Right(r) => Left("non-function in application position: %s".format(r))
+      }
+    }
+  }
+}
