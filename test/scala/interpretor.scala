@@ -24,27 +24,25 @@ class InterpretorSpec extends FunSuite with MustMatchers {
   }
 
   test("interprets immediate application of a lambda") {
-    val code = <program>
-      <call>
-        <def>
-          <params>
-            <param name="a"/>
-            <param name="b"/>
-          </params>
-          <call>
-            <ref id="+"/>
-            <ref id="a"/>
-            <ref id="b"/>
-          </call>
-        </def>
-        <lit type="int">4</lit>
-        <lit type="int">5</lit>
-      </call>
-    </program>
+    val code = <call>
+      <def>
+        <params>
+          <param name="a"/>
+          <param name="b"/>
+        </params>
+        <call>
+          <ref id="+"/>
+          <ref id="a"/>
+          <ref id="b"/>
+        </call>
+      </def>
+      <lit type="int">4</lit>
+      <lit type="int">5</lit>
+    </call>
 
     val result = NumValue(9)
 
-    lixp.evaluate(parser.parseProgram(code)(0)) must be(Right(result))
+    lixp.evaluate(parser.parse(code)) must be(Right(result))
   }
 
   test("interprets Y combinator") {
