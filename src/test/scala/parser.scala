@@ -3,7 +3,7 @@ package ro.igstan.test.lixp
 import ro.igstan.lixp._
 
 class ParserSpec extends FunSuite with MustMatchers {
-  test("parses XML nodes") {
+  test("parses a program") {
     val code = <program>
       <def name="add">
         <params>
@@ -32,29 +32,28 @@ class ParserSpec extends FunSuite with MustMatchers {
   }
 
   test("parses XML nodes representing an immediate application of a lambda") {
-    val code = <program>
-      <call>
-        <def>
-          <params>
-            <param name="a"/>
-            <param name="b"/>
-          </params>
-          <call>
-            <ref id="+"/>
-            <ref id="a"/>
-            <ref id="b"/>
-          </call>
-        </def>
-        <lit type="int">4</lit>
-        <lit type="int">5</lit>
-      </call>
-    </program>
+    val code = <call>
+      <def>
+        <params>
+          <param name="a"/>
+          <param name="b"/>
+        </params>
+        <call>
+          <ref id="+"/>
+          <ref id="a"/>
+          <ref id="b"/>
+        </call>
+      </def>
+      <lit type="int">4</lit>
+      <lit type="int">5</lit>
+    </call>
 
-    val ast = Seq(
-      App(Def(List('a, 'b), App(Id('+), List(Id('a), Id('b)))), List(Num(4), Num(5)))
+    val ast = App(
+      Def(List('a, 'b), App(Id('+), List(Id('a), Id('b)))),
+      List(Num(4), Num(5))
     )
 
-    parser.parseProgram(code) must be(ast)
+    parser.parse(code) must be(ast)
   }
 
   test("parses factorial defined using the Y combinator") {
