@@ -105,7 +105,7 @@ object lixp {
           }
 
           evaledArgs.right.flatMap(args => nfn(args.reverse))
-        case Right(r) => Left("non-function in application position: %s".format(r))
+        case Right(r) => Left(s"non-function in application position: $r")
       }
     }
   }
