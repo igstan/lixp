@@ -23,7 +23,7 @@ case class Binding(id: Symbol, value: Value, next: Env) extends Env
 sealed trait Value
 case class NumValue(n: Int) extends Value
 case class DefValue(params: Set[Symbol], body: Expr, env: Env) extends Value
-case class NativeDefValue(fn: Seq[Int] => Int) extends Value
+case class NativeDefValue(fn: Seq[Value] => Either[String, Value]) extends Value
 
 object lixp {
   private def key[K,V](kv: (K,V)): K = kv._1
@@ -32,7 +32,9 @@ object lixp {
   val standardEnv = Binding(
     '+, stdlib.add, Binding(
       '-, stdlib.sub, Binding(
-        '*, stdlib.mul, Binding('/, stdlib.div, Empty())
+        '*, stdlib.mul, Binding(
+          '/, stdlib.div, Empty()
+        )
       )
     )
   )
@@ -107,21 +109,15 @@ object lixp {
           }
         }
         case Right(NativeDefValue(nfn)) =>
-          val evaledArgs = args.foldLeft[Either[String, Seq[Int]]](Left(s"no arguments given for $fn")) {
+          val evaledArgs = args.foldLeft[Either[String, Seq[Value]]](Left(s"no arguments given for $fn")) {
             case (Right(values), arg) =>
-              evaluate(arg, env) match {
-                case Right(NumValue(v)) => Right(v +: values)
-                case Left(m) => Left(m)
-              }
+              evaluate(arg, env).right.map(_ +: values)
             case (Left(m), arg) if m.startsWith("no arguments given for") =>
-              evaluate(arg, env) match {
-                case Right(NumValue(v)) => Right(Seq(v))
-                case Left(m)            => Left(m)
-              }
+              evaluate(arg, env).right.map(Seq(_))
             case (Left(m), _) => Left(m)
           }
 
-          evaledArgs.right.map(args => NumValue(nfn(args.reverse)))
+          evaledArgs.right.flatMap(args => nfn(args.reverse))
         case Right(r) => Left("non-function in application position: %s".format(r))
       }
     }
