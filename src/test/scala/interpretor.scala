@@ -11,9 +11,9 @@ class InterpretorSpec extends FunSuite with MustMatchers {
           <param name="b"/>
         </params>
         <call>
-          <fn><ref id="+"/></fn>
-          <arg><ref id="a"/></arg>
-          <arg><ref id="b"/></arg>
+          <ref id="+"/>
+          <ref id="a"/>
+          <ref id="b"/>
         </call>
       </def>
     </program>
@@ -32,13 +32,13 @@ class InterpretorSpec extends FunSuite with MustMatchers {
             <param name="b"/>
           </params>
           <call>
-            <fn><ref id="+"/></fn>
-            <arg><ref id="a"/></arg>
-            <arg><ref id="b"/></arg>
+            <ref id="+"/>
+            <ref id="a"/>
+            <ref id="b"/>
           </call>
         </def>
-        <arg><lit type="int">4</lit></arg>
-        <arg><lit type="int">5</lit></arg>
+        <lit type="int">4</lit>
+        <lit type="int">5</lit>
       </call>
     </program>
 
@@ -53,62 +53,53 @@ class InterpretorSpec extends FunSuite with MustMatchers {
       <call>
         <def>
           <params><param name="f"/></params>
-          <call><fn><ref id="f"/></fn><arg><ref id="f"/></arg></call>
+          <call><ref id="f"/><ref id="f"/></call>
         </def>
-        <arg>
-          <def>
-            <params><param name="f"/></params>
-            <call>
-              <fn><ref id="h"/></fn>
-              <arg>
-                <def>
-                  <params><param name="n"/></params>
-                  <call>
-                    <fn><call><fn><ref id="f"/></fn><arg><ref id="f"/></arg></call></fn>
-                    <arg><ref id="n"/></arg>
-                  </call>
-                </def>
-              </arg>
-            </call>
-          </def>
-        </arg>
+        <def>
+          <params><param name="f"/></params>
+          <call>
+            <ref id="h"/>
+            <def>
+              <params><param name="n"/></params>
+              <call>
+                <call><ref id="f"/><ref id="f"/></call>
+                <ref id="n"/>
+              </call>
+            </def>
+          </call>
+        </def>
       </call>
     </def>
 
     val factorial = <call>
       { Y }
-      <arg>
+      <def>
+        <params><param name="factorial"/></params>
         <def>
-          <params><param name="factorial"/></params>
-          <def>
-            <params><param name="n"/></params>
-            <if>
+          <params><param name="n"/></params>
+          <if>
+            <ref id="n"/>
+            <call>
+              <ref id="*"/>
               <ref id="n"/>
               <call>
-                <fn><ref id="*"/></fn><arg><ref id="n"/></arg>
-                <arg>
-                  <call>
-                    <fn><ref id="factorial"/></fn>
-                    <arg>
-                      <call>
-                        <fn><ref id="-"/></fn>
-                        <arg><ref id="n"/></arg>
-                        <arg><lit type="int">1</lit></arg>
-                      </call>
-                    </arg>
-                  </call>
-                </arg>
+                <ref id="factorial"/>
+                <call>
+                  <ref id="-"/>
+                  <ref id="n"/>
+                  <lit type="int">1</lit>
+                </call>
               </call>
-              <lit type="int">1</lit>
-            </if>
-          </def>
+            </call>
+            <lit type="int">1</lit>
+          </if>
         </def>
-      </arg>
+      </def>
     </call>
 
     val `5!` = <call>
-      <fn>{ factorial }</fn>
-      <arg><lit type="int">5</lit></arg>
+      { factorial }
+      <lit type="int">5</lit>
     </call>
 
     lixp.evaluate(parser.parse(`5!`)) must be(Right(NumValue(120)))

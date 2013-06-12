@@ -11,15 +11,15 @@ class ParserSpec extends FunSuite with MustMatchers {
           <param name="b"/>
         </params>
         <call>
-          <fn><ref id="+"/></fn>
-          <arg><ref id="a"/></arg>
-          <arg><ref id="b"/></arg>
+          <ref id="+"/>
+          <ref id="a"/>
+          <ref id="b"/>
         </call>
       </def>
       <call>
-        <fn><ref id="add"/></fn>
-        <arg><lit type="int">4</lit></arg>
-        <arg><lit type="int">5</lit></arg>
+        <ref id="add"/>
+        <lit type="int">4</lit>
+        <lit type="int">5</lit>
       </call>
     </program>
 
@@ -40,13 +40,13 @@ class ParserSpec extends FunSuite with MustMatchers {
             <param name="b"/>
           </params>
           <call>
-            <fn><ref id="+"/></fn>
-            <arg><ref id="a"/></arg>
-            <arg><ref id="b"/></arg>
+            <ref id="+"/>
+            <ref id="a"/>
+            <ref id="b"/>
           </call>
         </def>
-        <arg><lit type="int">4</lit></arg>
-        <arg><lit type="int">5</lit></arg>
+        <lit type="int">4</lit>
+        <lit type="int">5</lit>
       </call>
     </program>
 
@@ -64,54 +64,45 @@ class ParserSpec extends FunSuite with MustMatchers {
         <call>
           <def>
             <params><param name="f"/></params>
-            <call><fn><ref id="f"/></fn><arg><ref id="f"/></arg></call>
+            <call><ref id="f"/><ref id="f"/></call>
           </def>
-          <arg>
-            <def>
-              <params><param name="f"/></params>
-              <call>
-                <fn><ref id="h"/></fn>
-                <arg>
-                  <def>
-                    <params><param name="n"/></params>
-                    <call>
-                      <fn><call><fn><ref id="f"/></fn><arg><ref id="f"/></arg></call></fn>
-                      <arg><ref id="n"/></arg>
-                    </call>
-                  </def>
-                </arg>
-              </call>
-            </def>
-          </arg>
+          <def>
+            <params><param name="f"/></params>
+            <call>
+              <ref id="h"/>
+              <def>
+                <params><param name="n"/></params>
+                <call>
+                  <call><ref id="f"/><ref id="f"/></call>
+                  <ref id="n"/>
+                </call>
+              </def>
+            </call>
+          </def>
         </call>
       </def>
-      <arg>
+      <def>
+        <params><param name="g"/></params>
         <def>
-          <params><param name="g"/></params>
-          <def>
-            <params><param name="n"/></params>
-            <if>
+          <params><param name="n"/></params>
+          <if>
+            <ref id="n"/>
+            <call>
+              <ref id="*"/>
               <ref id="n"/>
               <call>
-                <fn><ref id="*"/></fn><arg><ref id="n"/></arg>
-                <arg>
-                  <call>
-                    <fn><ref id="g"/></fn>
-                    <arg>
-                      <call>
-                        <fn><ref id="-"/></fn>
-                        <arg><ref id="n"/></arg>
-                        <arg><lit type="int">1</lit></arg>
-                      </call>
-                    </arg>
-                  </call>
-                </arg>
+                <ref id="g"/>
+                <call>
+                  <ref id="-"/>
+                  <ref id="n"/>
+                  <lit type="int">1</lit>
+                </call>
               </call>
-              <lit type="int">1</lit>
-            </if>
-          </def>
+            </call>
+            <lit type="int">1</lit>
+          </if>
         </def>
-      </arg>
+      </def>
     </call>
 
     val Y = Def(List('h),

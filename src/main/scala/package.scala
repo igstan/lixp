@@ -1,3 +1,3 @@
 package ro.igstan
 
-package object lixp {}
+package object lixp { }
