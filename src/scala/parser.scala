@@ -10,8 +10,19 @@ object parser {
 
   def parse(xml: Node): Expr = {
     trim(xml) match {
-      case <def><params>{ ps @ _* }</params>{ body }</def> =>
-        Def(params(ps), parse(body))
+      case d @ <def><params>{ ps @ _* }</params>{ body }</def> =>
+        val result = Def(params(ps), parse(body))
+        d.attribute("name").map {
+          attr => Let(Seq(Symbol(attr(0).text) -> result), Id(Symbol(attr(0).text)))
+        } getOrElse result
+
+      case d @ <def>{ body }</def> =>
+        val result = parse(body)
+        d.attribute("name").map {
+          attr => Let(Seq(Symbol(attr(0).text) -> result), Id(Symbol(attr(0).text)))
+        } getOrElse {
+          sys.error("binding must be named")
+        }
 
       case <call>{ fnElem }{ argElems @ _* }</call> =>
         val fn = parse(fnElem)

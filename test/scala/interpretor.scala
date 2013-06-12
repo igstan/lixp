@@ -102,4 +102,27 @@ class InterpretorSpec extends FunSuite with MustMatchers {
 
     lixp.evaluate(parser.parse(`5!`)) must be(Right(NumValue(120)))
   }
+
+  test("interprets a program") {
+    val code = <program>
+      <def name="add">
+        <params>
+          <param name="a"/>
+          <param name="b"/>
+        </params>
+        <call>
+          <ref id="+"/>
+          <ref id="a"/>
+          <ref id="b"/>
+        </call>
+      </def>
+      <call>
+        <ref id="add"/>
+        <lit type="int">1</lit>
+        <lit type="int">2</lit>
+      </call>
+    </program>
+
+    lixp.evaluateSeq(parser.parseProgram(code)) must be(Right(NumValue(3)))
+  }
 }

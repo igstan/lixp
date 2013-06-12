@@ -110,4 +110,19 @@ object lixp {
       }
     }
   }
+
+  def evaluateSeq(exprs: Seq[Expr], env: Map[Symbol, Value] = standardEnv): Either[String, Value] = {
+    val (result, finalEnv) = exprs.foldLeft[(Either[String, Value], Map[Symbol, Value])](Left("no instructions") -> env) {
+      case ((prev, prevEnv), expr) =>
+        expr match {
+          case Let(Seq(binding), body) =>
+            evaluate(expr, prevEnv) match {
+              case Left(m)  => Left(m)  -> prevEnv
+              case Right(v) => Right(v) -> (prevEnv + (binding._1 -> v))
+            }
+          case expr => evaluate(expr, prevEnv) -> prevEnv
+        }
+    }
+    result
+  }
 }

@@ -24,7 +24,7 @@ class ParserSpec extends FunSuite with MustMatchers {
     </program>
 
     val ast = Seq(
-      Def(List('a, 'b), App(Id('+), List(Id('a), Id('b)))),
+      Let(List('add -> Def(List('a, 'b), App(Id('+), List(Id('a), Id('b))))), Id('add)),
       App(Id('add), List(Num(4), Num(5)))
     )
 
