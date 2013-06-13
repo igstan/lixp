@@ -2,7 +2,7 @@ package ro.igstan.test.lixp
 
 import ro.igstan.lixp._
 
-class InterpretorSpec extends FunSuite with MustMatchers {
+class InterpreterSpec extends FunSuite with MustMatchers {
   test("interprets from XML nodes") {
     val code = <program>
       <def name="add">
