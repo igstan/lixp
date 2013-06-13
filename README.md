@@ -2,7 +2,7 @@
 
 Lixp is a tiny programming language bearing basic Scheme semantics behind a hideous XML syntax.
 
-## How to Run
+## How To Run
 
     $ sbt assembly
     $ java -jar target/scala-2.10/lixp-assembly-0.1.0.jar examples/y-factorial.lixp.xml
