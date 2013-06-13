@@ -16,6 +16,8 @@ sourceDirectory in Test <<= baseDirectory(_ / "test")
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
+sbtassembly.Plugin.assemblySettings
+
 libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "1.9.1" % "test"
 )
